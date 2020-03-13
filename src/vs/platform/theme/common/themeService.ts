@@ -112,6 +112,11 @@ export interface IColorTheme {
 	 * List of all colors used with tokens. <code>getTokenStyleMetadata</code> references the colors by index into this list.
 	 */
 	readonly tokenColorMap: string[];
+
+	/**
+	 * Defines whether the theme supports semantic highlighting.
+	 */
+	readonly supportsSemanticHighlighting: boolean;
 }
 
 export interface IFileIconTheme {

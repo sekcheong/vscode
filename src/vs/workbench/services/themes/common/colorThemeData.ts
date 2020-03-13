@@ -59,6 +59,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 	watch?: boolean;
 	extensionData?: ExtensionData;
 
+	private themeSemanticHighlightSupport: boolean;
+	private customSemanticHighlightSupport: boolean | undefined;
+
 	private themeTokenColors: ITextMateThemingRule[] = [];
 	private customTokenColors: ITextMateThemingRule[] = [];
 	private colorMap: IColorMap = {};
@@ -78,6 +81,12 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		this.label = label;
 		this.settingsId = settingsId;
 		this.isLoaded = false;
+		this.themeSemanticHighlightSupport = false;
+		this.customSemanticHighlightSupport = false;
+	}
+
+	get supportsSemanticHighlighting(): boolean {
+		return (this.customSemanticHighlightSupport !== undefined) ? this.customSemanticHighlightSupport : this.themeSemanticHighlightSupport;
 	}
 
 	get tokenColors(): ITextMateThemingRule[] {
@@ -360,6 +369,7 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 
 	public setCustomTokenColors(customTokenColors: ITokenColorCustomizations) {
 		this.customTokenColors = [];
+		this.customSemanticHighlightSupport = undefined;
 
 		// first add the non-theme specific settings
 		this.addCustomTokenColors(customTokenColors);
@@ -368,6 +378,7 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		const themeSpecificTokenColors = customTokenColors[`[${this.settingsId}]`] as ITokenColorCustomizations;
 		if (types.isObject(themeSpecificTokenColors)) {
 			this.addCustomTokenColors(themeSpecificTokenColors);
+			this.customSemanticHighlightSupport = customTokenColors.supportsSemanticHighlighting;
 		}
 
 		this.tokenColorIndex = undefined;
@@ -431,13 +442,15 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		const result = {
 			colors: {},
 			textMateRules: [],
-			stylingRules: undefined
+			stylingRules: undefined,
+			supportsSemanticHighlighting: false
 		};
 		return _loadColorTheme(extensionResourceLoaderService, this.location, result).then(_ => {
 			this.isLoaded = true;
 			this.tokenStylingRules = result.stylingRules;
 			this.colorMap = result.colors;
 			this.themeTokenColors = result.textMateRules;
+			this.themeSemanticHighlightSupport = result.supportsSemanticHighlighting;
 		});
 	}
 
@@ -562,7 +575,7 @@ function toCSSSelector(extensionId: string, path: string) {
 	return str;
 }
 
-function _loadColorTheme(extensionResourceLoaderService: IExtensionResourceLoaderService, themeLocation: URI, result: { textMateRules: ITextMateThemingRule[], colors: IColorMap, stylingRules: TokenStylingRule[] | undefined }): Promise<any> {
+function _loadColorTheme(extensionResourceLoaderService: IExtensionResourceLoaderService, themeLocation: URI, result: { textMateRules: ITextMateThemingRule[], colors: IColorMap, stylingRules: TokenStylingRule[] | undefined, supportsSemanticHighlighting: boolean }): Promise<any> {
 	if (resources.extname(themeLocation) === '.json') {
 		return extensionResourceLoaderService.readExtensionResource(themeLocation).then(content => {
 			let errors: Json.ParseError[] = [];
@@ -581,6 +594,7 @@ function _loadColorTheme(extensionResourceLoaderService: IExtensionResourceLoade
 					convertSettings(contentValue.settings, result);
 					return null;
 				}
+				result.supportsSemanticHighlighting = result.supportsSemanticHighlighting || contentValue.supportsSemanticHighlighting;
 				let colors = contentValue.colors;
 				if (colors) {
 					if (typeof colors !== 'object') {
@@ -605,10 +619,10 @@ function _loadColorTheme(extensionResourceLoaderService: IExtensionResourceLoade
 						return Promise.reject(new Error(nls.localize({ key: 'error.invalidformat.tokenColors', comment: ['{0} will be replaced by a path. Values in quotes should not be translated.'] }, "Problem parsing color theme file: {0}. Property 'tokenColors' should be either an array specifying colors or a path to a TextMate theme file", themeLocation.toString())));
 					}
 				}
-				let tokenStylingRules = contentValue.tokenStylingRules;
-				if (tokenStylingRules && typeof tokenStylingRules === 'object') {
-					result.stylingRules = readCustomTokenStyleRules(tokenStylingRules, result.stylingRules);
-				}
+				// let tokenStylingRules = contentValue.tokenStylingRules;
+				// if (tokenStylingRules && typeof tokenStylingRules === 'object') {
+				// 	result.stylingRules = readCustomTokenStyleRules(tokenStylingRules, result.stylingRules);
+				// }
 				return null;
 			});
 		});

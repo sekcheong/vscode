@@ -222,6 +222,10 @@ const colorThemeSchema: IJSONSchema = {
 				$ref: textmateColorsSchemaId
 			}
 			]
+		},
+		supportsSemanticHighlighting: {
+			type: 'boolean',
+			description: nls.localize('schema.supportsSemanticHighlighting', 'Whether the theme supports semantic highlighting.')
 		}
 	}
 };

@@ -154,6 +154,11 @@ const tokenColorCustomizationConfiguration: IConfigurationNode = {
 		[ThemeSettings.TOKEN_COLOR_CUSTOMIZATIONS_EXPERIMENTAL]: experimentalTokenStylingCustomizationSchema
 	}
 };
+const supportsSemanticHighlightingPropertySchema: IJSONSchema = {
+	description: nls.localize('editorColors.supportsSemanticHighlighting', 'Whether the color scheme supports semantic highlighting.'),
+	type: 'boolean'
+};
+
 configurationRegistry.registerConfiguration(tokenColorCustomizationConfiguration);
 
 export function updateColorThemeConfigurationSchemas(themes: IWorkbenchColorTheme[]) {
@@ -166,7 +171,7 @@ export function updateColorThemeConfigurationSchemas(themes: IWorkbenchColorThem
 	const themeSpecificTokenStyling: IJSONSchema = { properties: {} };
 
 	const workbenchColors = { $ref: workbenchColorsSchemaId, additionalProperties: false };
-	const tokenColors = { properties: tokenColorSchema.properties, additionalProperties: false };
+	const tokenColors = { properties: { ...tokenColorSchema.properties, supportsSemanticHighlighting: supportsSemanticHighlightingPropertySchema }, additionalProperties: false };
 	const tokenStyling = { $ref: tokenStylingSchemaId, additionalProperties: false };
 	for (let t of themes) {
 		// add theme specific color customization ("[Abyss]":{ ... })
